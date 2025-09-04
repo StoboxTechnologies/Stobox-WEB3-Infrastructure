@@ -1,3 +1,16 @@
+# StoboxProtocolSTV3 v1.4.0
+### MonetaryFacet v1.1.0 Enhancement
+- **New Issuance Controls**: Added `setMaxIssuance()`, `maxIssuance()`, and `totalIssued()` functions
+- **Enhanced Treasury Management**: Improved token issuance limits and tracking
+- **Production Deployment**: MonetaryFacet v1.1.0 deployed to `0xFC9415a3f72CC1645f9C9994475f1482832622B3`
+
+### Technical Details
+- **Backward Compatible**: No breaking changes to existing functionality
+
+For a complete list of changes, see the [full changelog](https://github.com/StoboxTechnologies/STV3_protocol/compare/v1.3.0...v1.4.0)
+
+---
+
 # StoboxProtocolSTV3 v1.3.0
 This release introduces enhanced token management controls and validation capabilities to the STV3 Protocol:
 
