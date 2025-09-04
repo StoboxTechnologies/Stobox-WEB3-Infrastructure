@@ -1,3 +1,26 @@
+## **StoboxRWAVaultFactory v1.0.4 Release**
+**introduces automated token infrastructure setup, enhanced event system, comprehensive initial token configuration, and upgraded facet management with production deployment to Arbitrum One.**
+
+## What's Changed
+**Enhanced SetInfrastructureFacet v1.1.0:** Added comprehensive `initialSetup` function for automated token infrastructure configuration including treasury setup, role assignment, and validation rule linking.
+
+**Automated Initial Configuration:** New streamlined setup process automatically grants FINANCIAL_OPERATOR and RECOVERY_OPERATOR roles, configures treasury trust, and links validation rules in a single transaction.
+
+**Improved Event System:** Enhanced STV3TokenManagementFacet v1.1.0 with detailed event descriptions for all Diamond cut actions (Add, Replace, Remove) and comprehensive audit trails.
+
+**Enhanced Token Management:** Upgraded batch operations for trust/distrust management, validation rule linking, and facet updates with improved error handling and gas optimization.
+
+**Breaking Changes:** Removed legacy `setInfra` function and introduced `TECH_SERVICE_ROLE` requirement for infrastructure setup operations, requiring factory updates for existing deployments.
+
+**Production Deployment:** Successfully deployed to Arbitrum One (42161) with updated factory v1.0.4 and new facet versions verified on-chain.
+
+* S4-6390-initialSetup-SetInfrastructureFacet by @OlenaDolinchuk in https://github.com/StoboxTechnologies/ST4TokenFactory/pull/27
+* S4-6389-StoboxRWAVaultFactory-1.0.4 by @OlenaDolinchuk in https://github.com/StoboxTechnologies/ST4TokenFactory/pull/28
+
+**Full Changelog**: https://github.com/StoboxTechnologies/ST4TokenFactory/compare/v1.0.3...v1.0.4
+
+---
+
 ## **StoboxRWAVaultFactory v1.0.3 Release**
 **introduces enhanced token management capabilities, maximum issuance controls, trust management system, validation rule linking, and new package architecture with production deployment to Arbitrum One.**
 
