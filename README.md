@@ -1,6 +1,6 @@
 # Stobox-WEB3-Infrastructure
 
-<img width="1696" height="1192" alt="image" src="https://github.com/user-attachments/assets/f87dcfee-147e-43e3-89d5-e5e4c050a81a" />
+<img width="2048" height="1544" alt="image" src="https://github.com/user-attachments/assets/ed8dae7f-bcb7-4b12-af0e-20eea58129ad" />
 
 
 # Infrastructure description
