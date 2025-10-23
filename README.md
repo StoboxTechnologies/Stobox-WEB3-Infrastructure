@@ -18,7 +18,7 @@ Stobox has a modular smart contract infrastructure for the Stobox RWA (Real Worl
   - **STV3Treasury SC** – manages protocol treasury operations for the vault.
   - **StoboxProtocolSTV3 SC** – core protocol logic for a specific vault instance.
 - **Manages:** Maintains administrative control over deployed components.
-- **Future Integration:** Will also register & manage vaults inside the RWAOfferingRegistry SC (currently not yet active).
+- **Integration:** Registers & manages vaults inside the StoboxRWAOfferingRegistry SC for comprehensive offering management.
 
 ---
 
@@ -61,29 +61,7 @@ Stobox has a modular smart contract infrastructure for the Stobox RWA (Real Worl
 
 ---
 
-## 6. RWAOfferingRegistry SC (not yet implemented, planned module)
-
-> **Note:** This module is planned for future development and is **not yet implemented**.
-
-- **Role:** Will be a registry of offerings for RWAs.
-  - Intended to register and manage specific RWA offerings.
-  - Will integrate with StoboxRWAVaultFactory SC for asset lifecycle tracking.
-- **Interaction:** Will be integrated with the StoboxRWAVault Factory SC for asset lifecycle tracking and management.
-- **Status:** Not implemented.
-
----
-
-## Flow Summary
-
-1. **StoboxRWAVaultFactory SC** creates both the **STV3Treasury SC** and **StoboxProtocolSTV3 SC**.
-2. **StoboxRWAVaultFactory SC** manages the deployed protocol contracts.
-3. **StoboxProtocolSTV3 SC** interacts with **Validation HasDIDRule SC** to check compliance.
-4. **Validation HasDIDRule SC** queries **StoboxDID SC** to verify decentralized identities.
-5. *(Future step):* The factory may also register offerings in **RWAOfferingRegistry SC**.
-
----
-
-## 7. [StoboxRWAOfferingRegistry SC](https://arbiscan.io/address/0xb05cf4f652eb5475c3e4246ab976785678a1806a#code) (offering management & compliance registry)
+## 6. [StoboxRWAOfferingRegistry SC](https://arbiscan.io/address/0xb05cf4f652eb5475c3e4246ab976785678a1806a#code) (offering management & compliance registry)
 
 - **Role:** Manages registration, lifecycle, and compliance validation for Security Token Offerings (STOs) tied to Real World Assets (RWAs).
   - Handles complete lifecycle: creation, activation, suspension, cancellation, termination of offerings.
@@ -103,6 +81,16 @@ Stobox has a modular smart contract infrastructure for the Stobox RWA (Real Worl
 - **Deployed at:**
   - **Mainnet:** [`0xb05cf4f652eb5475c3e4246ab976785678a1806a`](https://arbiscan.io/address/0xb05cf4f652eb5475c3e4246ab976785678a1806a#code) ([v1.0.1 release notes](./ST4RWAOfferingRegistry-Release-Notes.md))
 - **Status:** Implemented; see [release notes](./ST4RWAOfferingRegistry-Release-Notes.md) and [contract source](https://github.com/StoboxTechnologies/ST4RWAOfferingRegistry).
+
+---
+
+## Flow Summary
+
+1. **StoboxRWAVaultFactory SC** creates both the **STV3Treasury SC** and **StoboxProtocolSTV3 SC**.
+2. **StoboxRWAVaultFactory SC** manages the deployed protocol contracts.
+3. **StoboxProtocolSTV3 SC** interacts with **Validation HasDIDRule SC** to check compliance.
+4. **Validation HasDIDRule SC** queries **StoboxDID SC** to verify decentralized identities.
+5. **StoboxRWAOfferingRegistry SC** manages STO lifecycle and compliance validation, integrating with the full RWA ecosystem.
 
 ---
 
