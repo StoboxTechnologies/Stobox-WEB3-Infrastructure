@@ -18,7 +18,7 @@ Stobox has a modular smart contract infrastructure for the Stobox RWA (Real Worl
   - **STV3Treasury SC** – manages protocol treasury operations for the vault.
   - **StoboxProtocolSTV3 SC** – core protocol logic for a specific vault instance.
 - **Manages:** Maintains administrative control over deployed components.
-- **Future Integration:** Will also register & manage vaults inside the RWAOfferingRegistry SC (currently not yet active).
+- **Integration:** Registers & manages vaults inside the StoboxRWAOfferingRegistry SC for comprehensive offering management.
 
 ---
 
@@ -61,15 +61,26 @@ Stobox has a modular smart contract infrastructure for the Stobox RWA (Real Worl
 
 ---
 
-## 6. RWAOfferingRegistry SC (not yet implemented, planned module)
+## 6. [StoboxRWAOfferingRegistry SC](https://arbiscan.io/address/0xb05cf4f652eb5475c3e4246ab976785678a1806a#code) (offering management & compliance registry)
 
-> **Note:** This module is planned for future development and is **not yet implemented**.
-
-- **Role:** Will be a registry of offerings for RWAs.
-  - Intended to register and manage specific RWA offerings.
-  - Will integrate with StoboxRWAVaultFactory SC for asset lifecycle tracking.
-- **Interaction:** Will be integrated with the StoboxRWAVault Factory SC for asset lifecycle tracking and management.
-- **Status:** Not implemented.
+- **Role:** Manages registration, lifecycle, and compliance validation for Security Token Offerings (STOs) tied to Real World Assets (RWAs).
+  - Handles complete lifecycle: creation, activation, suspension, cancellation, termination of offerings.
+  - Enforces compliance via a flexible rule engine and role-based access controls.
+- **Architecture:** Built using EIP-2535 Diamond Pattern for upgradability and modular facets:
+  - **DiamondCutFacet** – Handles upgrades and facet management.
+  - **DiamondLoupeFacet** – Provides introspection and facet/query logic.
+  - **RegistryRoleFacet** – Manages user roles and permissions (admin, tech service, offering manager, etc).
+  - **OfferingGovernanceFacet** – Offering lifecycle management and governance.
+  - **RegistryStorageFacet** – Reliable data storage and retrieval for offerings.
+  - **RegistryRuleEngineFacet** – Enforces and manages offerings' compliance rules.
+- **Interaction:**
+  - Integrates with **StoboxProtocolSTV3 SC** for security token management.
+  - Pulls identity data from **StoboxDID SC** via validation rules (e.g., AccreditedUSMinInvestmentRule).
+  - Enables offering registration and compliance enforcement through custom rules and whitelisting.
+  - Can lock and unlock security tokens based on offering state.
+- **Deployed at:**
+  - **Mainnet:** [`0xb05cf4f652eb5475c3e4246ab976785678a1806a`](https://arbiscan.io/address/0xb05cf4f652eb5475c3e4246ab976785678a1806a#code) ([v1.0.1 release notes](./ST4RWAOfferingRegistry-Release-Notes.md))
+- **Status:** Implemented; see [release notes](./ST4RWAOfferingRegistry-Release-Notes.md) and [contract source](https://github.com/StoboxTechnologies/ST4RWAOfferingRegistry).
 
 ---
 
@@ -79,4 +90,15 @@ Stobox has a modular smart contract infrastructure for the Stobox RWA (Real Worl
 2. **StoboxRWAVaultFactory SC** manages the deployed protocol contracts.
 3. **StoboxProtocolSTV3 SC** interacts with **Validation HasDIDRule SC** to check compliance.
 4. **Validation HasDIDRule SC** queries **StoboxDID SC** to verify decentralized identities.
-5. *(Future step):* The factory may also register offerings in **RWAOfferingRegistry SC**.
+5. **StoboxRWAOfferingRegistry SC** manages STO lifecycle and compliance validation, integrating with the full RWA ecosystem.
+
+---
+
+**Integration Highlights:**
+- The **StoboxRWAOfferingRegistry SC** is designed to coordinate with the full RWA ecosystem:
+  - When a new offering is created, it can assign roles, configure compliance rules, require investors to meet identity/KYC requirements (via rules engine and DID checks), and manage token reservation.
+  - The registry acts as a unified point of compliance, history, and role enforcement for all RWA offerings on Stobox.
+
+
+
+
