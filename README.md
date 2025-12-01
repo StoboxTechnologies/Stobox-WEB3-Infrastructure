@@ -189,6 +189,35 @@ The factory uses internal Solidity libraries for code reuse between facets:
 - **LibCreateSTV3** (v1.0.0) - STV3 token creation logic and deployment tracking
 - **LibFactoryRoles** (v1.0.0) - Role-based access control implementation
 
+### Factory Versioning System:
+
+The **StoboxRWAVaultFactory** implements the same Diamond versioning system as the StoboxProtocolSTV3. Each deployment and update is strictly tracked using the **major.minor.patch** format for precise tracking of the factory build state and facet composition changes.
+
+#### **Version Components:**
+
+**major** - Architectural version of the factory
+- Fundamental architectural changes to the factory infrastructure
+- Expected to remain `1` unless a complete redesign occurs
+- Breaking changes to the factory architecture
+
+**minor** - Factory Diamond build version (facet composition)
+- Each new logical build of the factory Diamond increments `minor`
+- Business logic or governance determines the build composition
+- New facets or features added to the factory
+
+**patch** - Local changes to factory facets
+- Starts from `0` at initial factory deployment
+- Incremented by `+1` for each facet modification via `diamondCut`
+- Bug fixes and minor updates to factory facets
+
+#### **Core Contract Versioning:**
+
+The factory's core contract provides master-controlled versioning functions:
+- `setFactoryVersion(uint256 major, uint256 minor, uint256 patch)` - Updates factory version (master only)
+- `getVersion()` - Returns current semantic version (major, minor, patch)
+
+This versioning system uses **LibVersion** library with Diamond Storage pattern for consistent version tracking across all factory upgrades and modifications.
+
 ### Deployment Details:
 
 **Arbitrum One Mainnet:**
@@ -383,6 +412,58 @@ The protocol uses internal Solidity libraries for code reuse between facets:
 - **LibMonetary** - Treasury and monetary operations logic
 - **LibRoles** - Role-based access control implementation
 - **LibValidator** - Validation rules and compliance checks
+- **LibVersion** - Semantic versioning support for Diamond builds
+
+### Diamond Versioning System:
+
+Each deployment and update of the StoboxProtocolSTV3 Diamond contract is strictly tracked using a structured versioning scheme in the format **major.minor.patch**. This allows precise tracking of the build state, its structure, and the change history at the facet level.
+
+#### **Version Components:**
+
+**major** - Architectural version of the project
+- Represents fundamental architectural changes
+- Expected to remain `1` for an extended period unless a complete redesign or architectural overhaul is introduced
+- Indicates breaking changes to the core architecture
+
+**minor** - Version of the Diamond build (facet composition)
+- Each new logical build of the Diamond (a set of specific facets forming a working system) increments `minor`
+- The business logic or project governance determines the composition of the build
+- Indicates new features or facet additions that maintain backward compatibility
+
+**patch** - Local changes to facets
+- Starts from `0` at the moment of initial Diamond deployment
+- For each facet added via `diamondCut` during the initial build process, `patch` is incremented by `+1`
+- Any modification to facets (addition, update, or removal via `diamondCut`) increments `patch` by `+1`
+- Indicates bug fixes or minor updates
+
+#### **Example Versioning Sequence:**
+
+1. **Diamond deployment** → version = `1.0.0`
+2. **Adding facets via diamondCut** (initial build) → version = `1.0.1`
+3. **Updating one of the facets** via diamondCut → version = `1.0.2`
+4. **Creating a new build** (e.g., with new business logic) → version = `1.1.0`
+5. **Further changes** (via any diamondCut operation) → version = `1.1.1`, `1.1.2`, and so on
+
+#### **LibVersion Implementation:**
+
+The versioning logic is implemented in the **LibVersion** library and uses a fixed storage slot (via `keccak256("stobox.version.storage")`) for compatibility with the Diamond Storage pattern (EIP-2535).
+
+**Data Structure:**
+```solidity
+struct Version {
+    uint256 major;    // Architectural version of the project
+    uint256 minor;    // Version of the Diamond build (facet composition)
+    uint256 patch;    // Local changes to facets
+}
+```
+
+**Functions:**
+- `setVersion(uint256 major, uint256 minor, uint256 patch)` - Sets the full semantic version (used during initial deployment)
+- `increasePatch()` - Increments the patch version by +1 and emits VersionUpdated event (used after each diamondCut operation)
+- `getVersion()` - Returns the current semantic version as a structured object
+
+**Event:**
+- `VersionUpdated(uint256 indexed major, uint256 indexed minor, uint256 indexed patch)` - Emitted when the version is updated
 
 ### Deployment Details:
 - **Network:** Arbitrum Mainnet
