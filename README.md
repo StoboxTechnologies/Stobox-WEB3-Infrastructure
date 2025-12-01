@@ -14,11 +14,15 @@ Stobox has a modular smart contract infrastructure for the Stobox RWA (Real Worl
 - **Role:** Main factory contract responsible for deploying and registering new vault instances.
   - Acts as the entry point for creating new components of the protocol.
   - Responsible for deploying and initializing other smart contracts.
+  - Acts as the deployer for StoboxProtocolSTV3 Diamond contracts.
 - **Creates:**
   - **STV3Treasury SC** – manages protocol treasury operations for the vault.
-  - **StoboxProtocolSTV3 SC** – core protocol logic for a specific vault instance.
-- **Manages:** Maintains administrative control over deployed components.
+  - **StoboxProtocolSTV3 SC** – core protocol logic for a specific vault instance (Diamond Standard implementation with facets).
+- **Manages:** 
+  - Maintains administrative control over deployed components.
+  - Configures validation rules and trusted addresses for protocol instances.
 - **Integration:** Registers & manages vaults inside the StoboxRWAOfferingRegistry SC for comprehensive offering management.
+- **Release Notes:** [StoboxRWAVaultFactory-Release-Notes.md](./StoboxRWAVaultFactory-Release-Notes.md)
 
 ---
 
@@ -34,10 +38,81 @@ Stobox has a modular smart contract infrastructure for the Stobox RWA (Real Worl
 
 ## 3. [StoboxProtocolSTV3 SC](https://arbiscan.io/address/0x998a0beaf37ca4ba61b5cfac59fdee0da2211a46#code) (core protocol logic)
 
-- **Role:** Implements the business logic for RWA token operations, compliance, and transactions.
-- **Created by:** StoboxRWAVaultFactory SC.
-- **Managed:** Directly by the factory contract.
-- **Works with:** Validation HasDIDRule SC for identity verification.
+- **Role:** STV3 represents Stobox's latest proprietary tokenization standard, engineered to deliver a more secure, efficient, and scalable framework for managing tokenized assets.
+- **Architecture:** Built using **Diamond Standard (EIP-2535)** for modularity and upgradability.
+  - Enables modular design by separating functionality into different facets
+  - Contract logic is encapsulated within a single contract using DELEGATECALL to invoke facet contracts
+  - Supports dynamic upgrades without redeploying the entire system
+- **Token Standard:** ERC-20 compliant with extended functionality
+- **Created by:** StoboxRWAVaultFactory SC
+- **Managed:** Directly by the factory contract
+- **Works with:** Validation HasDIDRule SC for identity verification
+
+### Core Features:
+- **Diamond Standard (EIP-2535)**: Modular design and contract upgradability
+- **ERC-20 Token Standard**: Standard token functionalities
+- **Role-Based Access Control**: Grants specific addresses permission to mint and burn tokens
+- **Validation Management**: Trusted addresses, validation rules, and pre-transfer validation checks
+- **Treasury Operations**: Token withdrawals, allowances management, metadata access
+- **Monetary Controls**: Issue, redeem, and transfer tokens from treasury
+- **Emergency Controls**: Forceful transfers, minting, burning, and protocol pause capabilities
+
+### Facets Structure:
+
+#### **Core Contract (Immutable)**
+Contains immutable functions defined directly in the diamond:
+- `constructor()`, `receive()`, `fallback()`
+- `transfer()`, `approve()`, `transferFrom()`
+- `setDeployer()`, `transferOwnership()`
+- `name()`, `symbol()`, `decimals()`, `totalSupply()`, `balanceOf()`, `maxSupply()`, `allowance()`
+- `deployer()`, `owner()`, `getVersion()`
+
+#### **DiamondCutFacet**
+Allows the contract owner to add, replace, or remove facets dynamically:
+- `diamondCut()`
+
+#### **DiamondLoupeFacet**
+Provides introspection methods to query available facets and function selectors:
+- `facets()`, `facetFunctionSelectors()`, `facetAddresses()`, `facetAddress()`, `supportsInterface()`
+
+#### **ValidationFacet**
+Implements on-chain validation management for tokens:
+- `trust()`, `distrust()`, `linkRule()`, `unlinkRule()`
+- `pauseToken()`, `unpauseToken()`
+- `trustList()`, `isTrusted()`, `ruleDescription()`, `validationRulesList()`, `tokenPaused()`
+- `beforeUpdateValidation()`, `afterUpdateValidation()`
+
+#### **RolesFacet**
+Provides role-based access control management using AccessControl standard:
+- `initIERC165Roles()`, `grantRole()`, `revokeRole()`, `renounceRole()`
+- `getRoleMember()`, `getRoleMemberCount()`, `getRoleMembers()`, `getRoleAdmin()`, `hasRole()`
+- `FINANCIAL_OPERATOR()`, `RECOVERY_OPERATOR()`
+
+#### **MonetaryFacet**
+Implements treasury management and monetary operations:
+- `setTreasury()`, `issue()`, `redeem()`, `transferFromTreasury()`, `treasury()`
+
+#### **EmergencyFacet**
+Provides privileged emergency operations (RECOVERY_OPERATOR role only):
+- `forcedTransfer()`, `forcedMint()`, `forcedBurn()`
+- `pauseProtocolSTV3()`, `unpauseProtocolSTV3()`
+
+### Protocol Libraries:
+The protocol uses internal Solidity libraries for code reuse between facets:
+- **LibDiamond** - Diamond pattern implementation, ownership, and access control
+- **LibERC20** - ERC-20 token logic and storage
+- **LibMonetary** - Treasury and monetary operations logic
+- **LibRoles** - Role-based access control implementation
+- **LibValidator** - Validation rules and compliance checks
+
+### Deployment Details:
+- **Network:** Arbitrum Mainnet
+- **Chain ID:** 42161
+- **Name:** Stobox Security Token v.3
+- **Symbol:** STBX
+- **Decimals:** 6
+- **Network Status:** arbiscan.freshstatus.io
+- **Release Notes:** [StoboxProtocolSTV3-Release-Notes.md](./StoboxProtocolSTV3-Release-Notes.md)
 
 ---
 
@@ -58,6 +133,7 @@ Stobox has a modular smart contract infrastructure for the Stobox RWA (Real Worl
   - Manages DID creation, attributes, linked addresses, and access permissions.
   - Provides the source of truth for identity verification across the ecosystem.
 - **Interaction:** Queried by Validation HasDIDRule SC to confirm DID ownership and validity.
+- **Repository:** [ST4DIDSC](https://github.com/StoboxTechnologies/ST4DIDSC)
 
 ---
 
@@ -98,6 +174,19 @@ Stobox has a modular smart contract infrastructure for the Stobox RWA (Real Worl
 - The **StoboxRWAOfferingRegistry SC** is designed to coordinate with the full RWA ecosystem:
   - When a new offering is created, it can assign roles, configure compliance rules, require investors to meet identity/KYC requirements (via rules engine and DID checks), and manage token reservation.
   - The registry acts as a unified point of compliance, history, and role enforcement for all RWA offerings on Stobox.
+
+---
+
+## GitHub Public Repositories
+
+### Smart Contracts & Blockchain Releases:
+- **[Stobox-WEB3-Infrastructure](https://github.com/StoboxTechnologies/Stobox-WEB3-Infrastructure)** - Main infrastructure documentation and architecture overview
+- **[Stobox_STV3_Protocol](https://github.com/StoboxTechnologies/Stobox_STV3_Protocol)** - StoboxProtocolSTV3 smart contract implementation
+- **[ST4DIDSC](https://github.com/StoboxTechnologies/ST4DIDSC)** - Decentralized Identifier (DID) smart contract
+- **[ST4RWAOfferingRegistry](https://github.com/StoboxTechnologies/ST4RWAOfferingRegistry)** - RWA Offering Registry implementation
+
+### Documentation:
+For detailed technical documentation about smart contracts, facets, libraries, and deployment guides, please refer to the respective repository documentation and release notes.
 
 
 
