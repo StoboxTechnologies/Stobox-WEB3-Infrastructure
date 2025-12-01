@@ -408,11 +408,290 @@ The protocol uses internal Solidity libraries for code reuse between facets:
 
 ## 5. [StoboxDID SC](https://arbiscan.io/address/0x25E6036178656b1329ee51696407b367D8C6ba84#code) (decentralized identity registry)
 
-- **Role:** Stores and manages DIDs (Decentralized Identifiers) for participants.
-  - Manages DID creation, attributes, linked addresses, and access permissions.
-  - Provides the source of truth for identity verification across the ecosystem.
-- **Interaction:** Queried by Validation HasDIDRule SC to confirm DID ownership and validity.
+The **StoboxDID** smart contract implements a comprehensive decentralized identity (DID) system that enables users to create, manage, and update digital identities on-chain. As real-world asset (RWA) tokenization accelerates, the demand for robust compliance and privacy-centric identity verification grows. The Stobox DID framework directly addresses these challenges by providing secure, blockchain-based identity management.
+
+- **Role:** Stores and manages DIDs (Decentralized Identifiers) for ecosystem participants
+  - Manages DID creation, attributes, linked addresses, and access permissions
+  - Provides the source of truth for identity verification across the ecosystem
+  - Supports secure identity management across multiple addresses
+  - Enables controlled data sharing within a decentralized ecosystem
+- **Interaction:** Queried by Validation HasDIDRule SC to confirm DID ownership and validity
 - **Repository:** [ST4DIDSC](https://github.com/StoboxTechnologies/ST4DIDSC)
+
+### Core Features:
+- **Unique Identifier Management**: Each DID is associated with a unique UDID (Unique Decentralized Identifier)
+- **Attribute Storage**: Store and manage flexible attributes with validation periods and type metadata
+- **Multi-Address Linking**: Support linking multiple wallet addresses to the same DID
+- **Role-Based Access Control**: Granular permissions via WRITER_ROLE, ATTRIBUTE_READER_ROLE, and ownership
+- **External Reader System**: Time-limited, controlled access for third-party data readers
+- **DID Lifecycle Management**: Create, update, prolong, block/unblock DIDs
+- **Address Management**: Link, deactivate, activate, and remove addresses from DIDs
+- **Attribute Management**: Add, update, deactivate attributes with expiration control
+- **Maximum Address Limits**: Configurable maximum number of linked addresses per DID
+
+### Data Structures:
+
+#### **Attribute Structure**
+Manages the history and state of DID attributes with flexible data storage.
+
+```solidity
+struct Attribute {
+    bytes value;              // Attribute value in arbitrary byte format
+    string valueType;         // Human-readable type (e.g., "STRING", "UINT", "HASH")
+    uint256 createdAt;       // Creation timestamp
+    uint256 updatedAt;       // Last update timestamp
+    uint256 validTo;         // Validity expiration timestamp
+    address lastUpdatedBy;   // Address that last updated the attribute
+}
+```
+
+**Purpose:**
+- Managing attribute history and state
+- Verifying data validity based on `validTo` field
+- Tracking the last updater via `lastUpdatedBy`
+- Storing values in flexible format using `bytes value`
+
+#### **DID Structure**
+Represents a complete Decentralized Identity object with comprehensive metadata.
+
+```solidity
+struct DID {
+    string UDID;                                    // Unique Decentralized Identifier
+    uint256 validTo;                                // DID validity expiration timestamp
+    uint256 updatedAt;                              // Last update timestamp
+    bool blocked;                                   // Block status (suspended/revoked)
+    address lastUpdatedBy;                          // Address that last modified DID
+    string[] attributeList;                         // List of attribute keys
+    mapping(string => Attribute) attributes;        // Attribute key to data mapping
+    mapping(address => uint256) externalReader;     // External reader access expiration
+}
+```
+
+**Purpose:**
+- Unique identifier (UDID) management
+- Validity control via `validTo` and `blocked` flags
+- Attribute storage and tracking through mapping and key list
+- Access control for external data readers with expiration
+- Auditability via timestamps and `lastUpdatedBy`
+
+#### **Linker Structure**
+Manages relationships between addresses and a DID.
+
+```solidity
+struct Linker {
+    string UDID;                    // Associated Unique Decentralized Identifier
+    uint256 joinDate;               // Timestamp when address was linked
+    uint256 updateDate;             // Last modification timestamp
+    bool deactivated;               // Deactivation status
+    address[] linkedAddresses;      // All addresses linked to this UDID
+}
+```
+
+**Purpose:**
+- Track when linking was initiated (`joinDate`)
+- Track last modification (`updateDate`)
+- Manage active/deactivated link status
+- Maintain list of all Ethereum addresses associated with UDID
+
+#### **ParamAttribute Structure**
+Input parameter structure for batch attribute operations.
+
+```solidity
+struct ParamAttribute {
+    address walletAddress;      // Target wallet address
+    string attributeName;       // Attribute key/name
+    bytes value;                // Attribute value in bytes
+    string valueType;           // Human-readable type description
+    uint256 validToData;        // Validity expiration timestamp
+}
+```
+
+**Purpose:** Used in `addOrUpdateAttributes` function to apply or update attribute values for specific wallet addresses.
+
+### Access Control:
+
+#### **DEFAULT_ADMIN_ROLE**
+Holds complete control over the role-based access control system. Automatically assigned to contract deployer.
+
+**Capabilities:**
+- Grant any role (including DEFAULT_ADMIN_ROLE) to any address
+- Revoke any role from any address
+- Change role admin for other roles using `_setRoleAdmin`
+- Full self-management permissions
+
+**Assignment:** Granted upon contract creation through constructor:
+```solidity
+constructor() {
+    _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+}
+```
+
+#### **WRITER_ROLE**
+Essential role responsible for managing and updating DIDs and their associated data.
+
+**DID Management:**
+- `createDID()` - Creates a new decentralized identifier
+- `prolongateDID()` - Extends the validity of an existing DID
+- `blockDID()` - Blocks a DID, restricting access or usage
+- `unBlockDID()` - Unblocks a previously blocked DID
+
+**Address Linking:**
+- `linkAddressToDID()` - Links an address to a specific DID
+- `removeLinkedAddress()` - Removes a linked address from a DID
+- `deactivateAddressOfDID()` - Deactivates a linked address
+- `activateAddressOfDID()` - Reactivates a previously deactivated address
+
+**External Reader Management:**
+- `addOrUpdateExternalReader()` - Adds or updates external reader access
+- `deleteExternalReader()` - Removes external reader's access
+
+**Attribute Management:**
+- `addOrUpdateAttributes()` - Adds or updates DID attributes
+- `deactivateDIDAttribute()` - Deactivates an attribute
+
+#### **ATTRIBUTE_READER_ROLE**
+Grants view-only access to DID-related data without modification rights.
+
+**DID Data Access:**
+- `readFullDID()` - Reads complete DID data including attributes and linked addresses
+- `readAttributeList()` - Reads the list of attributes associated with a DID
+- `readLinkedAddresses()` - Reads the list of addresses linked to a DID
+
+**Restrictions:** Read-only access, no modification or deletion permissions.
+
+#### **DID Owner**
+Any address that is linked to a specific DID. Each linked address is considered an owner of that DID.
+
+**Owner Capabilities:**
+- `linkAddressToDID()` - Link another address to their own DID
+- `deactivateAddressOfDID()` - Deactivate an address linked to their own DID
+- `activateAddressOfDID()` - Reactivate a deactivated address on their own DID
+- `addOrUpdateExternalReader()` - Add or update external readers for their own DID
+- `deleteExternalReader()` - Remove external readers from their own DID
+
+#### **External Reader**
+An address granted temporary read access to a specific DID. Access is time-limited and controlled by the DID owner with defined expiration dates.
+
+**Reader Capabilities (while access is valid):**
+- `readAttributeList()` - View attribute keys associated with the DID
+- `readLinkedAddresses()` - View addresses currently linked to the DID
+- `readFullDID()` - Retrieve complete DID data structure
+
+**Access Control:** `externalReaderExpirationDate > block.timestamp`
+
+### View Methods:
+
+**DID Information:**
+- `getUserDID(address walletAddress)` - Retrieves DID details for a wallet address (returns: UDID, validTo, updatedAt, blocked, lastUpdatedBy)
+- `getLinker(address walletAddress)` - Retrieves linker information for an address (returns: uDID, joinDate, updateDate, deactivated)
+
+**Attribute Information:**
+- `getAttribute(address walletAddress, string attributeName)` - Retrieves specific attribute details (returns: value, valueType, createdAt, updatedAt, validTo, lastUpdatedBy)
+
+**Access Verification:**
+- `canRead(string uDIDToRead, address addressCanRead)` - Checks if address has permission to read DID attributes
+- `externalReaderExpirationDate(string uDID, address walletAddress)` - Returns expiration timestamp for external reader access
+
+### Write Methods:
+
+**DID Lifecycle Management:**
+- `createDID(string calldata uDID, uint256 validToData)` - Creates a new DID (WRITER_ROLE)
+- `prolongateDID(string calldata uDID, uint256 newValidToData)` - Extends DID validity (WRITER_ROLE)
+- `blockDID(string calldata uDID, string calldata reason)` - Blocks a DID (WRITER_ROLE)
+- `unBlockDID(string calldata uDID, string calldata reason)` - Unblocks a DID (WRITER_ROLE)
+
+**Address Management:**
+- `linkAddressToDID(string calldata uDID, address addressToLink)` - Links address to DID (WRITER_ROLE or DID Owner)
+- `removeLinkedAddress(string calldata uDID, address addressToDelete)` - Removes linked address (WRITER_ROLE)
+- `deactivateAddressOfDID(string calldata uDID, address addressToDeactivate)` - Deactivates address (WRITER_ROLE or DID Owner)
+- `activateAddressOfDID(string calldata uDID, address addressToActivate)` - Reactivates address (WRITER_ROLE or DID Owner)
+
+**Attribute Management:**
+- `addOrUpdateAttributes(ParamAttribute[] calldata paramAttributes)` - Batch add/update attributes (WRITER_ROLE)
+- `deactivateDIDAttribute(string calldata uDID, string calldata attributeName)` - Deactivates attribute (WRITER_ROLE)
+
+**External Reader Management:**
+- `addOrUpdateExternalReader(string calldata uDID, address reader, uint256 expirationData)` - Adds/updates external reader (WRITER_ROLE or DID Owner)
+- `deleteExternalReader(string calldata uDID, address reader)` - Removes external reader (WRITER_ROLE or DID Owner)
+
+**Configuration:**
+- `setMaxLinkedAddresses(uint256 newMax)` - Sets maximum allowed linked addresses per DID (DEFAULT_ADMIN_ROLE)
+
+### Access-Controlled Read Methods:
+
+Require appropriate permissions (ATTRIBUTE_READER_ROLE, DID Owner, or External Reader with valid access):
+
+- `readFullDID(string calldata uDID)` - Reads complete DID structure
+- `readAttributeList(string calldata uDID)` - Reads all attribute keys for a DID
+- `readLinkedAddresses(string calldata uDID)` - Reads all addresses linked to a DID
+
+### Events:
+
+**DID Lifecycle Events:**
+- `DIDCreated(string indexed UDID, string UDID_, address indexed createdBy)` - New DID created
+- `DIDValidToDateUpdated(string indexed UDID, string UDID_, uint256 oldValidTo, uint256 indexed newValidTo, address indexed updatedBy)` - Validity date changed
+- `DIDBlockStatusUpdated(string indexed UDID, string UDID_, bool indexed newBlockStatus, address indexed updatedBy, string reasonDescription)` - Block status changed
+
+**Address Linking Events:**
+- `DIDAddressLinked(string indexed UDID, string UDID_, address indexed addedAddress, address indexed updatedBy)` - Address linked to DID
+- `DIDAddressDeleted(string indexed UDID, string UDID_, address indexed deletedAddress, address indexed updatedBy)` - Linked address removed
+- `DIDAddressDeactivated(string indexed UDID, string UDID_, address indexed deactivatedAddress, address indexed updatedBy)` - Address deactivated
+- `DIDAddressActivated(string indexed UDID, string UDID_, address indexed activatedAddress, address indexed updatedBy)` - Address reactivated
+
+**Attribute Events:**
+- `AttributeCreated(string indexed UDID, string UDID_, string indexed attributeName, address indexed createdBy)` - New attribute added
+- `AttributeUpdated(string indexed UDID, string UDID_, string indexed attributeName, address indexed updatedBy)` - Attribute updated
+- `AttributeDeactivated(string indexed UDID, string UDID_, string indexed attributeName, address indexed deactivatedBy)` - Attribute deactivated
+- `AttributeValidToDateUpdated(string indexed UDID, string UDID_, string indexed attributeName, uint256 oldValidTo, uint256 newValidTo, address indexed updatedBy)` - Attribute validity changed
+
+**External Reader Events:**
+- `NewExternalReaderAdded` - External reader access granted
+- `ExternalReaderUpdated` - External reader access updated
+- `ExternalReaderDeleted` - External reader access removed
+
+**Data Access Events:**
+- `AttributeListWasRead` - Attribute list was queried
+- `LinkedAddressesListWasRead` - Linked addresses list was queried
+- `FullDIDWasRead(string indexed UDID, string UDID_, address whoRead)` - Full DID data was read
+
+**Error/Debug Events:**
+- `UnexpectedBehavior(string indexed UDID, string UDID_, address indexed addressToDelete, string message, address indexed addressOfBrokenLinker)` - System encountered inconsistent linkage
+
+### Custom Errors:
+
+```solidity
+error CantRevokeLastSuperAdmin();
+error CantRemoveLastLinkedAddress();
+error DIDAlreadyExists(string UDID);
+error DIDDoesNotExist(string UDID);
+error ZeroAddressNotAllowed();
+error AddressAlreadyLinkedToDID(address alreadyLinkedAddress, string uDIDLinked);
+error AddressDoesNotLinkedToDID(address notLinkedAddress);
+error AddressDoesNotHaveLinker(address addressWithoutLinker);
+error AddressAlreadyDeactivated(address alreadyDeactivatedAddress);
+error AddressAlreadyActivated(address alreadyActivatedAddress);
+error NotAuthorizedForThisTransaction(address caller);
+error ValidToDataMustBeInFuture(uint256 existingDateTimestamp);
+error DIDIsBlocked(string UDID);
+error DIDIsNotBlocked(string UDID);
+error MaxLinkedAddressesExceeded(string UDID, uint256 maxAllowed);
+error AddressIsNotExternalReader(string UDID, address notReaderAddress);
+```
+
+### Deployment Details:
+
+**Arbitrum Mainnet:**
+- **Chain ID:** 42161
+- **Address:** [`0x25E6036178656b1329ee51696407b367D8C6ba84`](https://arbiscan.io/address/0x25E6036178656b1329ee51696407b367D8C6ba84#code)
+- **Name:** StoboxDID
+- **Network Status:** arbiscan.freshstatus.io
+- **Documentation:** [Stobox Docs V4](https://docs.stobox.io)
+
+**Arbitrum Sepolia Testnet:**
+- **Chain ID:** 421614
+- **Address:** `0xA832662d1E11F2a6cEF706cE54A993E7eeEDC440`
+- **Name:** SDID
+- **Network Status:** arbiscan.freshstatus.io
 
 ---
 
